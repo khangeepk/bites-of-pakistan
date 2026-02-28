@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Easy to switch to sqlite for local testing if needed
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  city      String?
+  orders    Order[]
+  reviews   Review[]
+  createdAt DateTime @default(now())
+}
+
+model Restaurant {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  city        String
+  type        String // e.g., 'Fast Food', 'Dhaba', 'Hotel', 'Fine Dining'
+  image       String
+  isFeatured  Boolean  @default(false)
+  isSponsored Boolean  @default(false)
+  dishes      Dish[]
+  reviews     Review[]
+  createdAt   DateTime @default(now())
+}
+
+model Dish {
+  id           String      @id @default(cuid())
+  name         String
+  description  String
+  history      String? // For the blogging aspect
+  price        Float
+  image        String
+  restaurantId String
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id])
+  orderItems   OrderItem[]
+  createdAt    DateTime    @default(now())
+}
+
+model Order {
+  id     String  @id @default(cuid())
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  // Guest checkout details
+  customerName  String?
+  customerPhone String?
+  deliveryAddr  String?
+
+  total         Float
+  paymentMethod String // 'cod', 'bank'
+  status        String @default("pending") // 'pending', 'preparing', 'delivered'
+
+  items     OrderItem[]
+  createdAt DateTime    @default(now())
+}
+
+model OrderItem {
+  id       String @id @default(cuid())
+  orderId  String
+  dishId   String
+  quantity Int
+  price    Float
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  dish     Dish   @relation(fields: [dishId], references: [id])
+}
+
+model Review {
+  id           String     @id @default(cuid())
+  userId       String? // Optional for guest reviews, but required for "Verified Visit"
+  user         User?      @relation(fields: [userId], references: [id])
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  rating       Int // 1-5
+  comment      String
+  photos       String[] // Array of image URLs
+  isVerified   Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+}
